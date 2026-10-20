@@ -215,7 +215,6 @@ public class MovimientoJugador : MonoBehaviour
     {
         if (camaraPrincipal == null) return;
 
-        // Dibuja el rayo en Scene totalmente firme sin temblores ni desalineación de fotogramas
         Debug.DrawRay(camaraPrincipal.position, camaraPrincipal.forward * distanciaInteraccion, Color.cyan);
 
         if (Keyboard.current == null) return;
