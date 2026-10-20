@@ -4,7 +4,7 @@ using UnityEngine.InputSystem;
 public class CamaraSeguimiento : MonoBehaviour
 {
     [Header("Objetivo")]
-    [SerializeField] private Transform objetivo; // Arrastra aquí tu Jugador
+    [SerializeField] private Transform objetivo;
 
     [Header("Configuración de Órbita y Mouse")]
     [SerializeField] private float distancia = 6f;          // Distancia respecto al jugador
