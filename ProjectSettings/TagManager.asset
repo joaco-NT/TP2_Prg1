@@ -3,7 +3,11 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 3
-  tags: []
+  tags:
+  - "Obst\xE1culo"
+  - Pared
+  - Enemy
+  - Barro
   layers:
   - Default
   - TransparentFX
@@ -12,8 +16,8 @@ TagManager:
   - Water
   - UI
   - Suelo
-  - Interactable
-  - 
+  - Interactiva
+  - Enemigos
   - 
   - 
   - 

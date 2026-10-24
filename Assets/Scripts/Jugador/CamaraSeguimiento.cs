@@ -3,109 +3,62 @@ using UnityEngine.InputSystem;
 
 public class CamaraSeguimiento : MonoBehaviour
 {
-    [Header("Objetivo")]
     [SerializeField] private Transform objetivo;
+    [SerializeField] private float distancia = 6f;          
+    [SerializeField] private float sensibilidadMouse = 2f;   
+    [SerializeField] private float pitchMin = -20f;         
+    [SerializeField] private float pitchMax = 60f;          
+    [SerializeField] private float velocidadSuavizado = 15f; 
 
-    [Header("Configuración de Órbita y Mouse")]
-    [SerializeField] private float distancia = 6f;          // Distancia respecto al jugador
-    [SerializeField] private float sensibilidadMouse = 2f;  // Velocidad de giro con el mouse
-    [SerializeField] private float pitchMin = -20f;         // Límite para no mirar muy abajo
-    [SerializeField] private float pitchMax = 60f;          // Límite para no mirar muy arriba
+    private float rotacionX = 0f, rotacionY = 0f; 
+    private Camera camaraPrincipal;
 
-    [Header("Configuración de Suavizado")]
-    [SerializeField] private float velocidadSuavizado = 15f; // Qué tan fluida sigue la cámara
-
-    private float rotacionX = 0f; // Inclinación vertical (Pitch)
-    private float rotacionY = 0f; // Rotación horizontal (Yaw)
-
-    void Start()
+    private void Awake()
     {
-        BuscarObjetivoAutomaticamente();
-        ConfigurarCursorInicial();
-        InicializarRotacion();
+        camaraPrincipal = GetComponent<Camera>();
+        if (camaraPrincipal == null) camaraPrincipal = Camera.main;
     }
 
-    void Update()
+    private void Start()
     {
-        ComprobarLiberacionCursor();
-
-        if (objetivo == null) return;
-
-        LeerEntradasMouse();
-    }
-
-    void LateUpdate()
-    {
-        if (objetivo == null) return;
-
-        PosicionarYEnfocarCamara();
-    }
-
-    // ==========================================
-    // MÉTODOS AUXILIARES
-    // ==========================================
-    private void BuscarObjetivoAutomaticamente()
-    {
-        if (objetivo == null && GameObject.FindGameObjectWithTag("Player") != null)
+        if (objetivo == null)
         {
-            objetivo = GameObject.FindGameObjectWithTag("Player").transform;
+            GameObject jugadorObj = GameObject.FindGameObjectWithTag("Player");
+            if (jugadorObj != null) objetivo = jugadorObj.transform;
         }
-    }
-
-    private void ConfigurarCursorInicial()
-    {
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
-    }
-
-    private void InicializarRotacion()
-    {
+        
         Vector3 angulos = transform.eulerAngles;
-        rotacionY = angulos.y;
+        rotacionY = angulos.y; 
         rotacionX = angulos.x;
     }
 
-    private void ComprobarLiberacionCursor()
+    private void Update()
     {
-        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
-        {
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
-        }
+        if (objetivo == null || Mouse.current == null) return;
+        
+        Vector2 deltaMouse = Mouse.current.delta.ReadValue();
+        rotacionY += deltaMouse.x * sensibilidadMouse * 0.1f;
+        rotacionX = Mathf.Clamp(rotacionX - (deltaMouse.y * sensibilidadMouse * 0.1f), pitchMin, pitchMax);
     }
 
-    private void LeerEntradasMouse()
+    private void LateUpdate()
     {
-        float mouseX = 0f;
-        float mouseY = 0f;
-
-        if (Mouse.current != null)
-        {
-            Vector2 deltaMouse = Mouse.current.delta.ReadValue();
-            mouseX = deltaMouse.x * sensibilidadMouse * 0.1f;
-            mouseY = deltaMouse.y * sensibilidadMouse * 0.1f;
-        }
-
-        rotacionY += mouseX;
-        rotacionX -= mouseY;
-
-        // Limitar la rotación vertical para que la cámara no dé la vuelta completa
-        rotacionX = Mathf.Clamp(rotacionX, pitchMin, pitchMax);
-    }
-
-    private void PosicionarYEnfocarCamara()
-    {
-        // Calcular la rotación basada en los ejes del mouse
+        if (objetivo == null) return;
+        
         Quaternion rotacion = Quaternion.Euler(rotacionX, rotacionY, 0);
-
-        // Calcular la posición deseada alrededor del jugador (apuntando al torso, sumando Vector3.up * 1.5f)
         Vector3 puntoFoco = objetivo.position + Vector3.up * 1.5f;
-        Vector3 posicionDeseada = puntoFoco - (rotacion * Vector3.forward * distancia);
-
-        // Mover la cámara suavemente hacia la posición calculada
-        transform.position = Vector3.Lerp(transform.position, posicionDeseada, velocidadSuavizado * Time.deltaTime);
-
-        // Hacer que la cámara siempre mire al jugador
+        transform.position = Vector3.Lerp(transform.position, puntoFoco - (rotacion * Vector3.forward * distancia), velocidadSuavizado * Time.deltaTime);
         transform.LookAt(puntoFoco);
+    }
+
+    public Ray ObtenerRayoInteraccion()
+    {
+        if (camaraPrincipal != null)
+        {
+            return camaraPrincipal.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+        }
+
+        Quaternion rotacion = Quaternion.Euler(rotacionX, rotacionY, 0);
+        return new Ray(transform.position, rotacion * Vector3.forward);
     }
 }
